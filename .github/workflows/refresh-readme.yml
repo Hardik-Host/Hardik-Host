@@ -1,0 +1,32 @@
+name: Refresh Profile README (daily)
+on:
+  schedule:
+    - cron: '5 0 * * *'  # 05:00 UTC daily
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Update timestamp
+        run: |
+          python - <<'PY'
+          from datetime import datetime, timezone
+          ts = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M UTC")
+          with open("README.md","r",encoding="utf-8") as f:
+              s=f.read()
+          mark="<!--last-updated-->"
+          if mark in s:
+              before, after = s.split(mark, 1)
+              s = before + mark + "\nLast updated: " + ts + "\n" + after.split("\n",1)[-1]
+          else:
+              s += "\n\n" + mark + "\nLast updated: " + ts + "\n"
+          with open("README.md","w",encoding="utf-8") as f:
+              f.write(s)
+          PY
+      - name: Commit changes
+        uses: stefanzweifel/git-auto-commit-action@v5
+        with:
+          commit_message: "chore: auto-update README timestamp"
